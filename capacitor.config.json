@@ -1,0 +1,10 @@
+{
+  "appId": "com.example.intellimeds",
+  "appName": "IntelliMeds",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true,
+    "allowNavigation": ["localhost"]
+  }
+}
