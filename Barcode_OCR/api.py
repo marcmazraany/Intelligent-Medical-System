@@ -5,12 +5,11 @@ import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from barcode import barcode_infos, load_and_clean_drug_excel, lookup_drug_by_gtin
-from Text_Detection_Function import detect_text_from_image, extract_drug_infos_with_gpt
 
 
 app = FastAPI(
-    title="Drug Barcode API",
-    description="Upload an image and get barcode-based drug recognition.",
+    title="Drug Barcode-Only API",
+    description="Upload an image and get barcode-based drug recognition only.",
     version="1.0.0",
 )
 
@@ -67,42 +66,10 @@ async def get_barcode_info(file: UploadFile = File(...)) -> Dict:
                 "Drug Details": detections,
             }
 
-        # Fallback: OCR text detection if barcode could not retrieve a name.
-        detected_texts = detect_text_from_image(image_bytes)
-        
-        extracted_drugs = extract_drug_infos_with_gpt(detected_texts)
-
-        if extracted_drugs:
-            return {
-                "success": True,
-                "source": "text_detection",
-                "detected_count": len(extracted_drugs),
-                "Drug Details": extracted_drugs,
-                "detected_texts": detected_texts,
-            }
-
-        raise ValueError("Could not retrieve drug name from barcode or text detection")
+        raise ValueError("Could not retrieve drug information from barcode")
 
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error: {str(exc)}")
-
-@app.post("/ocr-only", response_model=Dict)
-async def get_ocr_only(file: UploadFile = File(...)) -> Dict:
-    try:
-        image_bytes = await file.read()
-        detected_texts = detect_text_from_image(image_bytes)
-        
-        extracted_drugs = extract_drug_infos_with_gpt(detected_texts)
-
-        return {
-            "success": True,
-            "source": "text_detection",
-            "detected_count": len(extracted_drugs) if extracted_drugs else 0,
-            "Drug Details": extracted_drugs if extracted_drugs else [],
-            "detected_texts": detected_texts,
-        }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error: {str(exc)}")
 
