@@ -1,0 +1,14 @@
+fastapi==0.116.1
+uvicorn==0.35.0
+
+opencv-python==4.6.0.66
+numpy==1.26.4
+pandas==2.3.0
+
+paddleocr==2.7.3
+paddlepaddle==3.0.0
+
+python-dotenv==1.1.1
+openai==1.99.1
+
+zxing-cpp==2.3.0

@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedFinder Lebanon - Find Medications</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .search-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-search {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-search:active {
+            transform: translateY(0);
+        }
+
+        .btn-search:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #667eea;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .results-header h2 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .results-summary {
+            color: #666;
+            font-size: 1.15rem;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.3em;
+        }
+
+        .pharmacy-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-left: 6px solid #667eea;
+            position: relative;
+        }
+
+        .pharmacy-card:hover {
+            transform: translateX(8px);
+            box-shadow: 0 10px 35px rgba(102, 126, 234, 0.25);
+        }
+
+        .pharmacy-header {
+            margin-bottom: 20px;
+        }
+
+        .pharmacy-name {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .pharmacy-address {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .stock-badge {
+            display: inline-block;
+            padding: 8px 18px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        .stock-badge.in-stock {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+        }
+
+        .pharmacy-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .info-icon {
+            font-size: 1.8rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        .info-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+            margin-top: 2px;
+        }
+
+        .pharmacy-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .btn-maps {
+            flex: 1;
+            min-width: 200px;
+            background: linear-gradient(135deg, #1a73e8 0%, #0052cc 100%);
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-maps:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(26, 115, 232, 0.3);
+        }
+
+        .btn-call {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .btn-call:hover {
+            box-shadow: 0 8px 20px rgba(17, 153, 142, 0.3);
+        }
+
+        .btn-alert {
+            background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%);
+        }
+
+        .btn-alert:hover {
+            box-shadow: 0 8px 20px rgba(243, 156, 18, 0.3);
+        }
+
+        .last-updated {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: #fff3cd;
+            border-radius: 8px;
+            color: #856404;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .no-results {
+            background: white;
+            border-radius: 20px;
+            padding: 80px 40px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .no-results-icon {
+            font-size: 5rem;
+            margin-bottom: 25px;
+            opacity: 0.3;
+        }
+
+        .no-results h3 {
+            color: #333;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .no-results p {
+            color: #666;
+            font-size: 1.15rem;
+            margin-bottom: 30px;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 3px solid #f5c6cb;
+            color: #721c24;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px 30px;
+            background: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .tab-button:hover:not(.active) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .alert-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .alert-status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-left: 10px;
+        }
+
+        .alert-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .alert-status.notified {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .pharmacy-info {
+                grid-template-columns: 1fr;
+            }
+
+            .pharmacy-actions {
+                flex-direction: column;
+            }
+
+            .btn-maps {
+                min-width: 100%;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .alert-filters {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>💊 MedFinder Lebanon</h1>
+        <p>Find medications at nearby pharmacies instantly</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-button active" onclick="switchTab('search')">🔍 Search Medications</button>
+        <button class="tab-button" onclick="switchTab('alerts')">🔔 My Alerts</button>
+    </div>
+
+    <!-- SEARCH TAB -->
+    <div id="searchTab" class="tab-content active">
+        <div class="search-card">
+            <form id="searchForm">
+                <div class="form-group">
+                    <label for="medicationName">Medication Name</label>
+                    <input
+                            type="text"
+                            id="medicationName"
+                            placeholder="e.g., Panadol, Augmentin, Ventolin..."
+                            required
+                    >
+                </div>
+
+                <button type="submit" class="btn-search" id="searchBtn">
+                    <span>🔍</span>
+                    <span>Search Pharmacies</span>
+                </button>
+
+                <div style="text-align: center; margin-top: 15px; color: #666; font-size: 0.95rem;">
+                    ℹ️ We automatically check cache first, then ping pharmacies if needed
+                </div>
+            </form>
+        </div>
+
+        <div id="loadingSection" style="display: none;">
+            <div class="search-card loading">
+                <div class="loading-spinner"></div>
+                <p style="font-size: 1.2rem; font-weight: 600;">Searching pharmacies...</p>
+            </div>
+        </div>
+
+        <div id="errorSection" style="display: none;"></div>
+        <div id="resultsSection" style="display: none;"></div>
+    </div>
+
+    <!-- ALERTS TAB -->
+    <div id="alertsTab" class="tab-content">
+        <div class="search-card">
+            <h2 style="margin-bottom: 20px; color: #333;">📧 Email for Notifications</h2>
+            <div class="form-group">
+                <label for="userEmail">Your Email Address</label>
+                <input
+                        type="email"
+                        id="userEmail"
+                        placeholder="your.email@example.com"
+                        value=""
+                >
+            </div>
+            <button onclick="saveEmail()" class="btn-search">
+                <span>💾</span>
+                <span>Save Email</span>
+            </button>
+        </div>
+
+        <div class="search-card" style="padding: 20px 30px;">
+            <div class="alert-filters">
+                <button class="filter-btn active" onclick="filterAlerts('all')">All Alerts</button>
+                <button class="filter-btn" onclick="filterAlerts('pending')">⏳ Pending</button>
+                <button class="filter-btn" onclick="filterAlerts('notified')">✅ Notified</button>
+            </div>
+        </div>
+
+        <div id="alertsList"></div>
+    </div>
+</div>
+
+<script>
+    // IMPORTANT: Update this URL if your backend is running on a different port
+    const API_BASE_URL = 'http://localhost:8080/api';
+
+    let userEmail = localStorage.getItem('userEmail') || '';
+    let currentFilter = 'all';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('userEmail').value = userEmail;
+        if (userEmail) loadAlerts();
+    });
+
+    // Tab switching
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        if (tab === 'search') {
+            document.querySelector('.tab-button:first-child').classList.add('active');
+            document.getElementById('searchTab').classList.add('active');
+        } else {
+            document.querySelector('.tab-button:last-child').classList.add('active');
+            document.getElementById('alertsTab').classList.add('active');
+            if (userEmail) loadAlerts();
+        }
+    }
+
+    // Email management
+    function saveEmail() {
+        const email = document.getElementById('userEmail').value.trim();
+        if (!email) {
+            alert('Please enter an email address');
+            return;
+        }
+        localStorage.setItem('userEmail', email);
+        userEmail = email;
+        alert('✅ Email saved successfully!');
+        loadAlerts();
+    }
+
+    // Search form - Uses /api/medications/search endpoint
+    // Backend automatically checks cache first, then pings if needed
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const medicationName = document.getElementById('medicationName').value.trim();
+
+        if (!medicationName) {
+            showError('Please enter a medication name');
+            return;
+        }
+
+        const loadingSection = document.getElementById('loadingSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const errorSection = document.getElementById('errorSection');
+        const searchBtn = document.getElementById('searchBtn');
+
+        loadingSection.style.display = 'block';
+        resultsSection.style.display = 'none';
+        errorSection.style.display = 'none';
+        searchBtn.disabled = true;
+
+        try {
+            // Single endpoint - backend handles cache check + ping automatically
+            const response = await fetch(
+                `${API_BASE_URL}/medications/search?name=${encodeURIComponent(medicationName)}&maxResults=10`
+            );
+
+            if (!response.ok) throw new Error('Search failed');
+
+            const data = await response.json();
+            displayResults(data);
+
+        } catch (error) {
+            showError('❌ Error connecting to server. Please ensure the backend is running on port 8080.');
+            console.error('Error:', error);
+        } finally {
+            loadingSection.style.display = 'none';
+            searchBtn.disabled = false;
+        }
+    });
+
+    function displayResults(data) {
+        const resultsSection = document.getElementById('resultsSection');
+        const errorSection = document.getElementById('errorSection');
+
+        resultsSection.style.display = 'block';
+        errorSection.style.display = 'none';
+
+        const pharmacies = data.pharmacies || [];
+
+        let html = `
+                <div class="results-header">
+                    <h2>🔍 ${data.medicationName}</h2>
+                    <div class="results-summary">
+                        Found <span class="highlight">${pharmacies.length}</span> ${pharmacies.length === 1 ? 'pharmacy' : 'pharmacies'} with stock
+                    </div>
+                </div>
+            `;
+
+        if (pharmacies.length === 0) {
+            html += `
+                    <div class="no-results">
+                        <div class="no-results-icon">😞</div>
+                        <h3>No Stock Found</h3>
+                        <p>This medication is not available at nearby pharmacies right now.</p>
+                        <button class="btn-search btn-alert" onclick="createAlert('${data.medicationName}')">
+                            🔔 Notify Me When Available
+                        </button>
+                    </div>
+                `;
+        } else {
+            pharmacies.forEach(pharmacy => {
+                html += createPharmacyCard(pharmacy);
+            });
+        }
+
+        resultsSection.innerHTML = html;
+    }
+
+    function createPharmacyCard(pharmacy) {
+        return `
+                <div class="pharmacy-card">
+                    <div class="pharmacy-header">
+                        <div class="pharmacy-name">🏥 ${pharmacy.pharmacyName}</div>
+                        <div class="pharmacy-address">${pharmacy.address || 'Beirut, Lebanon'}</div>
+                        <span class="stock-badge in-stock">✓ In Stock</span>
+                    </div>
+
+                    <div class="pharmacy-info">
+                        <div class="info-item">
+                            <span class="info-icon">📍</span>
+                            <div class="info-content">
+                                <span class="info-label">Distance</span>
+                                <span class="info-value">${pharmacy.distanceKm.toFixed(1)} km</span>
+                            </div>
+                        </div>
+
+                        ${pharmacy.travelTimeMinutes ? `
+                        <div class="info-item">
+                            <span class="info-icon">🚗</span>
+                            <div class="info-content">
+                                <span class="info-label">Travel Time</span>
+                                <span class="info-value">${pharmacy.travelTimeMinutes} min</span>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="info-item">
+                            <span class="info-icon">💊</span>
+                            <div class="info-content">
+                                <span class="info-label">Stock</span>
+                                <span class="info-value">${pharmacy.stockQuantity} units</span>
+                            </div>
+                        </div>
+
+                        <div class="info-item">
+                            <span class="info-icon">💰</span>
+                            <div class="info-content">
+                                <span class="info-label">Price</span>
+                                <span class="info-value">${pharmacy.price ? pharmacy.price.toLocaleString() + ' ' + pharmacy.currency : 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pharmacy-actions">
+                        <button class="btn-maps" onclick="openGoogleMaps('${pharmacy.googleMapsUrl}')">
+                            🗺️ Open in Google Maps
+                        </button>
+                        ${pharmacy.pharmacyPhone ? `
+                        <button class="btn-maps btn-call" onclick="window.location.href='tel:${pharmacy.pharmacyPhone}'">
+                            📞 Call Pharmacy
+                        </button>
+                        ` : ''}
+                    </div>
+
+                    <div class="last-updated">
+                        ⏰ Last updated: ${pharmacy.lastUpdated}
+                    </div>
+                </div>
+            `;
+    }
+
+    function createAlert(medicationName) {
+        if (!userEmail) {
+            alert('⚠️ Please enter your email in the Alerts tab first');
+            switchTab('alerts');
+            return;
+        }
+
+        const maxPrice = prompt('💰 Maximum price you want to pay (LBP)\nLeave empty for any price:');
+
+        const alertData = {
+            userEmail: userEmail,
+            medicationName: medicationName,
+            maxPrice: maxPrice ? parseFloat(maxPrice) : null,
+            notifyByEmail: true,
+            notifyBySMS: false
+        };
+
+        fetch(`${API_BASE_URL}/medications/alerts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(alertData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert('✅ Alert created! We will notify you when ' + medicationName + ' is back in stock.');
+                loadAlerts();
+            })
+            .catch(error => {
+                alert('❌ Failed to create alert. Please try again.');
+                console.error('Error:', error);
+            });
+    }
+
+    function filterAlerts(filter) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        loadAlerts();
+    }
+
+    async function loadAlerts() {
+        if (!userEmail) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/medications/alerts?email=${encodeURIComponent(userEmail)}`);
+            const allAlerts = await response.json();
+
+            let alerts = allAlerts;
+
+            // Filter alerts based on current filter
+            if (currentFilter === 'pending') {
+                alerts = allAlerts.filter(alert => !alert.lastNotified);
+            } else if (currentFilter === 'notified') {
+                alerts = allAlerts.filter(alert => alert.lastNotified);
+            }
+
+            const alertsList = document.getElementById('alertsList');
+
+            if (alerts.length === 0) {
+                alertsList.innerHTML = `
+                        <div class="no-results">
+                            <div class="no-results-icon">🔔</div>
+                            <h3>No ${currentFilter === 'all' ? '' : currentFilter.charAt(0).toUpperCase() + currentFilter.slice(1)} Alerts</h3>
+                            <p>${currentFilter === 'all' ? "You don't have any medication alerts set up yet." : `You don't have any ${currentFilter} alerts.`}</p>
+                        </div>
+                    `;
+            } else {
+                let html = `<div class="results-header"><h2>🔔 Your Alerts (${alerts.length})</h2></div>`;
+
+                alerts.forEach(alert => {
+                    const isPending = !alert.lastNotified;
+                    const statusBadge = isPending
+                        ? '<span class="alert-status pending">⏳ Pending</span>'
+                        : '<span class="alert-status notified">✅ Notified</span>';
+
+                    html += `
+                            <div class="pharmacy-card">
+                                <div class="pharmacy-header">
+                                    <div class="pharmacy-name">💊 ${alert.medicationName}${statusBadge}</div>
+                                    <span class="stock-badge in-stock">ACTIVE</span>
+                                </div>
+                                <div class="pharmacy-info">
+                                    <div class="info-item">
+                                        <span class="info-icon">💰</span>
+                                        <div class="info-content">
+                                            <span class="info-label">Max Price</span>
+                                            <span class="info-value">${alert.maxPrice ? alert.maxPrice.toLocaleString() + ' LBP' : 'Any Price'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-icon">📧</span>
+                                        <div class="info-content">
+                                            <span class="info-label">Email</span>
+                                            <span class="info-value">${alert.notifyByEmail ? 'Enabled' : 'Disabled'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-icon">📅</span>
+                                        <div class="info-content">
+                                            <span class="info-label">Created</span>
+                                            <span class="info-value">${new Date(alert.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                    ${alert.lastNotified ? `
+                                    <div class="info-item">
+                                        <span class="info-icon">✅</span>
+                                        <div class="info-content">
+                                            <span class="info-label">Last Notified</span>
+                                            <span class="info-value">${new Date(alert.lastNotified).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                <button class="btn-maps" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);" onclick="deleteAlert(${alert.id})">
+                                    🗑️ Delete Alert
+                                </button>
+                            </div>
+                        `;
+                });
+
+                alertsList.innerHTML = html;
+            }
+        } catch (error) {
+            console.error('Failed to load alerts:', error);
+        }
+    }
+
+    async function deleteAlert(alertId) {
+        if (!confirm('⚠️ Are you sure you want to delete this alert?')) return;
+
+        try {
+            await fetch(`${API_BASE_URL}/medications/alerts/${alertId}`, {
+                method: 'DELETE'
+            });
+            alert('✅ Alert deleted successfully');
+            loadAlerts();
+        } catch (error) {
+            alert('❌ Failed to delete alert');
+            console.error('Error:', error);
+        }
+    }
+
+    function showError(message) {
+        const errorSection = document.getElementById('errorSection');
+        const resultsSection = document.getElementById('resultsSection');
+
+        errorSection.style.display = 'block';
+        errorSection.innerHTML = `
+                <div class="error-message">
+                    <strong>⚠️ Error:</strong> ${message}
+                </div>
+            `;
+        resultsSection.style.display = 'none';
+    }
+
+    function openGoogleMaps(url) {
+        window.open(url, '_blank');
+    }
+</script>
+</body>
+</html>
